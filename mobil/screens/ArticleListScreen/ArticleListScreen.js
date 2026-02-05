@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import {
   View,
@@ -7,24 +7,34 @@ import {
   Image,
   TouchableOpacity,
   StyleSheet,
+  RefreshControl,
 } from "react-native";
 
 export default function ArticleListScreen({ navigation }) {
   const [articles, setArticles] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
   const noImage =
     "https://upload.wikimedia.org/wikipedia/commons/1/14/No_Image_Available.jpg";
 
+  const fetchArticles = async () => {
+    try {
+      const res = await fetch("http://10.6.24.118:5000/api/getArticles");
+      const json = await res.json();
+      setArticles(json.data);
+    } catch (err) {
+      console.error("NANI?!?!?!: ", err);
+    }
+  };
+
   useEffect(() => {
-    console.log("Fetching...");
-    fetch("http://10.6.24.118:5000/api/getArticles")
-      .then((res) => res.json())
-      .then((json) => {
-        console.log("Response: ", json);
-        setArticles(json.data);
-        console.log("Articles: ", articles);
-      })
-      .catch((err) => console.error(err));
+    fetchArticles();
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchArticles();
+    setRefreshing(false);
   }, []);
 
   const renderItem = ({ item }) => {
@@ -58,6 +68,8 @@ export default function ArticleListScreen({ navigation }) {
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderItem}
         contentContainerStyle={styles.container}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
       />
     </View>
   );
